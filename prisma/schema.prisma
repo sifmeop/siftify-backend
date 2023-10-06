@@ -14,7 +14,6 @@ model User {
   password     String
   username     String   @unique
   role         String
-  access_token String
   refreshToken String?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt

@@ -3,6 +3,7 @@ import { SignInType } from 'src/types/sign-up.type'
 import { Public } from './auth.guard'
 import { AuthService } from './auth.service'
 import { SignUpDto } from './dto'
+import { Tokens } from './types'
 
 @Controller('auth')
 export class AuthController {
@@ -10,10 +11,11 @@ export class AuthController {
 
   @Public()
   @Post('/sign-up')
-  signUp(@Body() signUpDto: SignUpDto) {
+  signUp(@Body() signUpDto: SignUpDto): Promise<Tokens> {
     return this.authService.signUp(signUpDto)
   }
 
+  @Public()
   @Post('/sign-in')
   signIn(@Body() signInDto: SignInType) {
     return this.authService.signIn(signInDto)

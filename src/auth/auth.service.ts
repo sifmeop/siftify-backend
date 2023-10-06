@@ -5,6 +5,7 @@ import { Role } from 'src/enums/role.enum'
 import { SignInType } from 'src/types/sign-up.type'
 import { PrismaService } from '../prisma/prisma.service'
 import { SignUpDto } from './dto'
+import { Tokens } from './types'
 
 @Injectable()
 export class AuthService {
@@ -13,10 +14,21 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async signUp(signUpDto: SignUpDto) {
+  async signUp(signUpDto: SignUpDto): Promise<Tokens> {
     const user = await this.prisma.user.findFirst({
       where: { email: signUpDto.email }
     })
+
+    const userNickname = await this.prisma.user.findFirst({
+      where: { username: signUpDto.username }
+    })
+
+    if (userNickname) {
+      throw new HttpException(
+        `Username ${signUpDto.username} already exists`,
+        HttpStatus.CONFLICT
+      )
+    }
 
     if (user) {
       throw new HttpException(
@@ -25,7 +37,7 @@ export class AuthService {
       )
     }
 
-    let uId = 1
+    let uId: number = 1
 
     const lastUser = await this.prisma.user.findFirst({
       orderBy: { uId: 'desc' }
@@ -33,20 +45,28 @@ export class AuthService {
 
     if (lastUser) uId = lastUser.uId + 1
 
-    const payload = { sub: uId, username: signUpDto.username }
-
     const newUser = await this.prisma.user.create({
       data: {
         uId,
         email: signUpDto.email,
         role: Role.User,
         username: signUpDto.username,
-        password: await bcrypt.hash(signUpDto.password, 10),
-        access_token: await this.jwtService.signAsync(payload)
+        password: await this.hashData(signUpDto.password)
       }
     })
 
-    return newUser
+    const tokens = await this.getTokens(newUser.uId, newUser.email)
+    await this.updateRefreshToken(newUser.id, tokens.refresh_token)
+
+    return tokens
+  }
+
+  async updateRefreshToken(userId: string, rt: string) {
+    const refreshToken = await this.hashData(rt)
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken }
+    })
   }
 
   async signIn(signInDto: SignInType) {
@@ -59,5 +79,39 @@ export class AuthService {
 
   async refreshTokens() {
     return ''
+  }
+
+  hashData(data: string) {
+    return bcrypt.hash(data, 10)
+  }
+
+  async getTokens(uid: number, email: string): Promise<Tokens> {
+    const [at, rt] = await Promise.all([
+      this.jwtService.signAsync(
+        {
+          sub: uid,
+          email
+        },
+        {
+          secret: process.env.AT_SECRET_KEY,
+          expiresIn: 60 * 15
+        }
+      ),
+      this.jwtService.signAsync(
+        {
+          sub: uid,
+          email
+        },
+        {
+          secret: process.env.RT_SECRET_KEY,
+          expiresIn: 60 * 60 * 24 * 7
+        }
+      )
+    ])
+
+    return {
+      access_token: at,
+      refresh_token: rt
+    }
   }
 }

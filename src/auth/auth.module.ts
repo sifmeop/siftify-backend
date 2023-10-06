@@ -4,22 +4,18 @@ import { JwtModule } from '@nestjs/jwt'
 import { AuthController } from './auth.controller'
 import { AuthGuard } from './auth.guard'
 import { AuthService } from './auth.service'
-import { jwtConstants } from './constants'
+import { AtStrategy, RtStrategy } from './strategies'
 
 @Module({
-  imports: [
-    JwtModule.register({
-      global: true,
-      secret: jwtConstants.secret,
-      signOptions: { expiresIn: '3600s' }
-    })
-  ],
+  imports: [JwtModule.register({})],
   providers: [
     {
       provide: APP_GUARD,
       useClass: AuthGuard
     },
-    AuthService
+    AuthService,
+    AtStrategy,
+    RtStrategy
   ],
   controllers: [AuthController]
 })
