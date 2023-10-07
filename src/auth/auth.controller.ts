@@ -1,8 +1,15 @@
-import { Body, Controller, Post } from '@nestjs/common'
-import { SignInType } from 'src/types/sign-up.type'
-import { Public } from './auth.guard'
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards
+} from '@nestjs/common'
+import { GetCurrentUser, GetCurrentUserId, Public } from 'src/common/decorators'
+import { RtGuard } from 'src/common/guards'
 import { AuthService } from './auth.service'
-import { SignUpDto } from './dto'
+import { SignInDto, SignUpDto } from './dto'
 import { Tokens } from './types'
 
 @Controller('auth')
@@ -11,23 +18,32 @@ export class AuthController {
 
   @Public()
   @Post('/sign-up')
+  @HttpCode(HttpStatus.CREATED)
   signUp(@Body() signUpDto: SignUpDto): Promise<Tokens> {
     return this.authService.signUp(signUpDto)
   }
 
   @Public()
   @Post('/sign-in')
-  signIn(@Body() signInDto: SignInType) {
-    return this.authService.signIn(signInDto)
+  @HttpCode(HttpStatus.OK)
+  signIn(@Body() SignInDto: SignInDto): Promise<Tokens> {
+    return this.authService.signIn(SignInDto)
   }
 
   @Post('/logout')
-  logout() {
-    return this.authService.logout()
+  @HttpCode(HttpStatus.OK)
+  logout(@GetCurrentUserId() userId: string) {
+    return this.authService.logout(userId)
   }
 
+  @Public()
+  @UseGuards(RtGuard)
   @Post('/refresh')
-  refreshTokens() {
-    return this.authService.refreshTokens()
+  @HttpCode(HttpStatus.OK)
+  refreshTokens(
+    @GetCurrentUserId() userId: string,
+    @GetCurrentUser('refreshToken') refreshToken: string
+  ) {
+    return this.authService.refreshTokens(userId, refreshToken)
   }
 }

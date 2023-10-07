@@ -36,6 +36,18 @@ export class SignUpDto {
   confirmPassword: string
 }
 
+export class SignInDto {
+  @IsNotEmpty({ message: 'Почта не должна быть пуста' })
+  @IsEmail()
+  email: string
+
+  @IsNotEmpty({ message: 'Пароль не должен быть пустым' })
+  @IsString()
+  @MinLength(8, { message: 'Пароль должен содержать минимум 8 символов' })
+  @MaxLength(24, { message: 'Пароль должен содержать максимум 24 символов' })
+  password: string
+}
+
 function IsEqualTo(property: string, validationOptions?: ValidationOptions) {
   return function (object: unknown, propertyName: string) {
     registerDecorator({
@@ -45,9 +57,9 @@ function IsEqualTo(property: string, validationOptions?: ValidationOptions) {
       constraints: [property],
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: unknown, args: ValidationArguments) {
           const [relatedPropertyName] = args.constraints
-          const relatedValue = (args.object as any)[relatedPropertyName]
+          const relatedValue = (args.object as unknown)[relatedPropertyName]
           return value === relatedValue
         }
       }

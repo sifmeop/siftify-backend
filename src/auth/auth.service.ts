@@ -2,9 +2,8 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcrypt'
 import { Role } from 'src/enums/role.enum'
-import { SignInType } from 'src/types/sign-up.type'
 import { PrismaService } from '../prisma/prisma.service'
-import { SignUpDto } from './dto'
+import { SignInDto, SignUpDto } from './dto'
 import { Tokens } from './types'
 
 @Injectable()
@@ -15,7 +14,7 @@ export class AuthService {
   ) {}
 
   async signUp(signUpDto: SignUpDto): Promise<Tokens> {
-    const user = await this.prisma.user.findFirst({
+    const userEmail = await this.prisma.user.findFirst({
       where: { email: signUpDto.email }
     })
 
@@ -30,7 +29,7 @@ export class AuthService {
       )
     }
 
-    if (user) {
+    if (userEmail) {
       throw new HttpException(
         `Email ${signUpDto.email} already exists`,
         HttpStatus.CONFLICT
@@ -55,8 +54,70 @@ export class AuthService {
       }
     })
 
-    const tokens = await this.getTokens(newUser.uId, newUser.email)
+    const tokens = await this.getTokens(newUser.id, newUser.email)
     await this.updateRefreshToken(newUser.id, tokens.refresh_token)
+
+    return tokens
+  }
+
+  async signIn(SignInDto: SignInDto): Promise<Tokens> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: SignInDto.email }
+    })
+
+    if (!user) {
+      throw new HttpException(
+        `Email ${SignInDto.email} doesn't exists`,
+        HttpStatus.NOT_FOUND
+      )
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      SignInDto.password,
+      user.password
+    )
+
+    if (!passwordMatches) {
+      throw new HttpException('Incorrect password', HttpStatus.UNAUTHORIZED)
+    }
+
+    const tokens = await this.getTokens(user.id, user.email)
+    await this.updateRefreshToken(user.id, tokens.refresh_token)
+
+    return tokens
+  }
+
+  async logout(userId: string) {
+    await this.prisma.user.updateMany({
+      where: {
+        id: userId,
+        refreshToken: {
+          not: null
+        }
+      },
+      data: {
+        refreshToken: null
+      }
+    })
+  }
+
+  async refreshTokens(userId: string, rt: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }
+    })
+
+    if (!user?.refreshToken) {
+      throw new HttpException('Access Denied', HttpStatus.FORBIDDEN)
+    }
+
+    const rtMatches = await bcrypt.compare(rt, user.refreshToken)
+
+    if (!rtMatches) {
+      throw new HttpException('Access Denied', HttpStatus.FORBIDDEN)
+    }
+
+    const tokens = await this.getTokens(user.id, user.email)
+    await this.updateRefreshToken(user.id, tokens.refresh_token)
 
     return tokens
   }
@@ -69,27 +130,15 @@ export class AuthService {
     })
   }
 
-  async signIn(signInDto: SignInType) {
-    return ''
-  }
-
-  async logout() {
-    return ''
-  }
-
-  async refreshTokens() {
-    return ''
-  }
-
   hashData(data: string) {
     return bcrypt.hash(data, 10)
   }
 
-  async getTokens(uid: number, email: string): Promise<Tokens> {
+  async getTokens(userId: string, email: string): Promise<Tokens> {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
         {
-          sub: uid,
+          sub: userId,
           email
         },
         {
@@ -99,7 +148,7 @@ export class AuthService {
       ),
       this.jwtService.signAsync(
         {
-          sub: uid,
+          sub: userId,
           email
         },
         {
