@@ -10,7 +10,7 @@ import { GetCurrentUser, GetCurrentUserId, Public } from 'src/common/decorators'
 import { RtGuard } from 'src/common/guards'
 import { AuthService } from './auth.service'
 import { SignInDto, SignUpDto } from './dto'
-import { Tokens } from './types'
+import { AuthResult } from './types'
 
 @Controller('auth')
 export class AuthController {
@@ -19,14 +19,14 @@ export class AuthController {
   @Public()
   @Post('/sign-up')
   @HttpCode(HttpStatus.CREATED)
-  signUp(@Body() signUpDto: SignUpDto): Promise<Tokens> {
+  signUp(@Body() signUpDto: SignUpDto): Promise<AuthResult> {
     return this.authService.signUp(signUpDto)
   }
 
   @Public()
   @Post('/sign-in')
   @HttpCode(HttpStatus.OK)
-  signIn(@Body() SignInDto: SignInDto): Promise<Tokens> {
+  signIn(@Body() SignInDto: SignInDto): Promise<AuthResult> {
     return this.authService.signIn(SignInDto)
   }
 

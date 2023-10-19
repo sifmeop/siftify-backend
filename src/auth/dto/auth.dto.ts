@@ -2,6 +2,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
   ValidationArguments,
@@ -10,41 +11,67 @@ import {
 } from 'class-validator'
 
 export class SignUpDto {
-  @IsNotEmpty({ message: 'Почта не должна быть пуста' })
+  @IsNotEmpty({ message: 'Email is required' })
   @IsEmail()
   email: string
 
-  @IsNotEmpty({ message: 'Username не должен быть пустым' })
+  @IsNotEmpty({ message: 'Username is required' })
   @IsString()
   @MinLength(4)
-  @MaxLength(10)
+  @MaxLength(12)
   username: string
 
-  @IsNotEmpty({ message: 'Пароль не должен быть пустым' })
+  @IsNotEmpty({ message: 'Password is required' })
   @IsString()
-  @MinLength(8, { message: 'Пароль должен содержать минимум 8 символов' })
-  @MaxLength(24, { message: 'Пароль должен содержать максимум 24 символов' })
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  @MaxLength(24, { message: 'Password must be at most 24 characters' })
+  @Matches(/^[a-zA-Z0-9~!?$\\\-_&#<>.()%@]+$/, {
+    message: 'Only Latin characters are allowed'
+  })
+  @Matches(/(?=.*[a-z])/, {
+    message: 'Password must contain at least one lowercase letter'
+  })
+  @Matches(/(?=.*[A-Z])/, {
+    message: 'Password must contain at least one uppercase letter'
+  })
+  @Matches(/(?=.*[~!?$\-_&#<>.()%@])/, {
+    message: 'Password must contain at least one special character'
+  })
+  @Matches(/(?=.*\d)/, { message: 'Password must contain at least one digit' })
   password: string
 
-  @IsNotEmpty({ message: 'Пароль не должен быть пустым' })
+  @IsNotEmpty({ message: 'Password is required' })
   @IsString()
-  @MinLength(8, { message: 'Пароль должен содержать минимум 8 символов' })
-  @MaxLength(24, { message: 'Пароль должен содержать максимум 24 символов' })
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  @MaxLength(24, { message: 'Password must be at most 24 characters' })
   @IsEqualTo('password', {
-    message: 'Пароль и подтверждение пароля должны совпадать'
+    message: 'Passwords must match'
   })
   confirmPassword: string
 }
 
 export class SignInDto {
-  @IsNotEmpty({ message: 'Почта не должна быть пуста' })
+  @IsNotEmpty({ message: 'Email is required' })
   @IsEmail()
   email: string
 
-  @IsNotEmpty({ message: 'Пароль не должен быть пустым' })
+  @IsNotEmpty({ message: 'Password is required' })
   @IsString()
-  @MinLength(8, { message: 'Пароль должен содержать минимум 8 символов' })
-  @MaxLength(24, { message: 'Пароль должен содержать максимум 24 символов' })
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  @MaxLength(24, { message: 'Password must be at most 24 characters' })
+  @Matches(/^[a-zA-Z0-9~!?$\\\-_&#<>.()%@]+$/, {
+    message: 'Only Latin characters are allowed'
+  })
+  @Matches(/(?=.*[a-z])/, {
+    message: 'Password must contain at least one lowercase letter'
+  })
+  @Matches(/(?=.*[A-Z])/, {
+    message: 'Password must contain at least one uppercase letter'
+  })
+  @Matches(/(?=.*[~!?$\-_&#<>.()%@])/, {
+    message: 'Password must contain at least one special character'
+  })
+  @Matches(/(?=.*\d)/, { message: 'Password must contain at least one digit' })
   password: string
 }
 

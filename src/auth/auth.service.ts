@@ -1,10 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { User } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
 import { Role } from 'src/enums/role.enum'
 import { PrismaService } from '../prisma/prisma.service'
 import { SignInDto, SignUpDto } from './dto'
-import { Tokens } from './types'
+import { AuthResult, Tokens } from './types'
 
 @Injectable()
 export class AuthService {
@@ -13,7 +14,7 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async signUp(signUpDto: SignUpDto): Promise<Tokens> {
+  async signUp(signUpDto: SignUpDto): Promise<AuthResult> {
     const userEmail = await this.prisma.user.findFirst({
       where: { email: signUpDto.email }
     })
@@ -44,7 +45,7 @@ export class AuthService {
 
     if (lastUser) uId = lastUser.uId + 1
 
-    const newUser = await this.prisma.user.create({
+    const newUser: User = await this.prisma.user.create({
       data: {
         uId,
         email: signUpDto.email,
@@ -57,10 +58,15 @@ export class AuthService {
     const tokens = await this.getTokens(newUser.id, newUser.email)
     await this.updateRefreshToken(newUser.id, tokens.refresh_token)
 
-    return tokens
+    delete newUser.refreshToken
+
+    return {
+      ...newUser,
+      ...tokens
+    }
   }
 
-  async signIn(SignInDto: SignInDto): Promise<Tokens> {
+  async signIn(SignInDto: SignInDto): Promise<AuthResult> {
     const user = await this.prisma.user.findUnique({
       where: { email: SignInDto.email }
     })
@@ -84,7 +90,12 @@ export class AuthService {
     const tokens = await this.getTokens(user.id, user.email)
     await this.updateRefreshToken(user.id, tokens.refresh_token)
 
-    return tokens
+    delete user.refreshToken
+
+    return {
+      ...user,
+      ...tokens
+    }
   }
 
   async logout(userId: string) {
