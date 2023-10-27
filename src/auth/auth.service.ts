@@ -2,7 +2,6 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { User } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
-import { Role } from 'src/enums/role.enum'
 import { PrismaService } from '../prisma/prisma.service'
 import { SignInDto, SignUpDto } from './dto'
 import { AuthResult, Tokens } from './types'
@@ -49,7 +48,6 @@ export class AuthService {
       data: {
         uId,
         email: signUpDto.email,
-        role: Role.User,
         username: signUpDto.username,
         password: await this.hashData(signUpDto.password)
       }

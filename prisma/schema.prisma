@@ -7,27 +7,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model User {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  uId          Int
-  email        String   @unique
-  password     String
-  username     String   @unique
-  role         String
-  refreshToken String?
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  uId             Int
+  email           String      @unique
+  password        String
+  username        String      @unique
+  role            UserRole    @default(USER)
+  refreshToken    String?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+  topTracks       TopTracks[]
+  faviritesTracks Track[]
+}
+
+model TopTracks {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  track     Track   @relation(fields: [trackId], references: [id])
+  listening Int     @default(0)
+  User      User?   @relation(fields: [userId], references: [id])
+  userId    String? @db.ObjectId
+  trackId   String  @db.ObjectId
+  Artist    Artist? @relation(fields: [artistId], references: [id])
+  artistId  String? @db.ObjectId
 }
 
 model Artist {
-  id    String  @id @default(auto()) @map("_id") @db.ObjectId
-  name  String  @unique
-  music Music[]
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  photo     String?
+  name      String      @unique
+  tracks    Track[]
+  listening Int         @default(0)
+  TopTracks TopTracks[]
 }
 
-model Music {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  title    String
-  Artist   Artist? @relation(fields: [artistId], references: [id])
-  artistId String? @db.ObjectId
+model Track {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  poster    String
+  track     String
+  feat      String[]
+  Artist    Artist?     @relation(fields: [artistId], references: [id])
+  artistId  String?     @db.ObjectId
+  listening Int         @default(0)
+  TopTracks TopTracks[]
+  User      User?       @relation(fields: [userId], references: [id])
+  userId    String?     @db.ObjectId
 }

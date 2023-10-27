@@ -2,19 +2,21 @@ import {
   Body,
   Controller,
   Post,
-  UploadedFile,
+  UploadedFiles,
   UseInterceptors
 } from '@nestjs/common'
 import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
-import { Upload, UploadMetaInfo } from 'src/types/upload.interface'
+import { Public } from 'src/common/decorators'
+import { Upload, UploadArtistDto } from 'src/types/upload.interface'
 import { UploadService } from './upload.service'
 
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
-  @Post()
+  @Public()
+  @Post('/track')
   @UseInterceptors(
     FileFieldsInterceptor(
       [
@@ -34,10 +36,10 @@ export class UploadController {
       }
     )
   )
-  uploadMusic(
-    @UploadedFile() files: Upload,
-    @Body() artistDto: UploadMetaInfo
+  uploadTrack(
+    @UploadedFiles() files: Upload,
+    @Body() artistDto: UploadArtistDto
   ) {
-    return this.uploadService.uploadMusic(artistDto)
+    return this.uploadService.uploadTrack(files, artistDto)
   }
 }

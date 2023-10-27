@@ -1,10 +1,9 @@
 export interface Upload {
   poster: Express.Multer.File
   audio: Express.Multer.File
-  meta: UploadMetaInfo
 }
 
-export interface UploadMetaInfo {
+export interface UploadArtistDto {
   artistName: string
-  musicTitle: string
+  trackTitle: string
 }
