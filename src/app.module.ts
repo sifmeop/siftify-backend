@@ -8,6 +8,7 @@ import { AtGuard } from './common/guards'
 import { PrismaModule } from './prisma/prisma.module'
 import { UploadModule } from './upload/upload.module'
 import { UserModule } from './user/user.module'
+import { TrackModule } from './track/track.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { UserModule } from './user/user.module'
     AuthModule,
     UserModule,
     PrismaModule,
-    UploadModule
+    UploadModule,
+    TrackModule
   ],
   providers: [
     {
