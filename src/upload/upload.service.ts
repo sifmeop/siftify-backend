@@ -41,7 +41,6 @@ export class UploadService {
   }
 
   async uploadTrack(files: Upload, artistDto: UploadArtistDto) {
-    console.debug(files, 'files')
     const isDuplicateTitle = await this.prisma.artist.findFirst({
       where: {
         tracks: {
@@ -61,7 +60,6 @@ export class UploadService {
           this.deleteFile(audioFilePath),
           this.deleteFile(posterFilePath)
         ])
-        console.log('Файлы успешно удалены')
       } catch (err) {
         console.error('Ошибка при удалении файлов:', err)
       }
