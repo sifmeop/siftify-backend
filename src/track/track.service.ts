@@ -15,7 +15,7 @@ export class TrackService {
           Artist: {
             select: {
               name: true,
-              photo: true
+              artistPhoto: true
             }
           }
         }

@@ -36,7 +36,7 @@ export class AuthService {
       )
     }
 
-    let uId: number = 1
+    let uId = 1
 
     const lastUser = await this.prisma.user.findFirst({
       orderBy: { uId: 'desc' }
@@ -143,23 +143,17 @@ export class AuthService {
     return bcrypt.hash(data, 10)
   }
 
-  async getTokens(userId: string, email: string): Promise<Tokens> {
+  async getTokens(sub: string, email: string): Promise<Tokens> {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
-        {
-          sub: userId,
-          email
-        },
+        { sub, email },
         {
           secret: process.env.AT_SECRET_KEY,
           expiresIn: 60 * 15
         }
       ),
       this.jwtService.signAsync(
-        {
-          sub: userId,
-          email
-        },
+        { sub, email },
         {
           secret: process.env.RT_SECRET_KEY,
           expiresIn: 60 * 60 * 24 * 7

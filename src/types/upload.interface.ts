@@ -1,5 +1,5 @@
 export interface Upload {
-  poster: Express.Multer.File
+  cover: Express.Multer.File
   audio: Express.Multer.File
 }
 

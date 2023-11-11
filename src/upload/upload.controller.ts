@@ -20,7 +20,7 @@ export class UploadController {
   @UseInterceptors(
     FileFieldsInterceptor(
       [
-        { name: 'poster', maxCount: 1 },
+        { name: 'cover', maxCount: 1 },
         { name: 'audio', maxCount: 1 }
       ],
       {

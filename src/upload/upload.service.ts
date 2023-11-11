@@ -14,7 +14,7 @@ export class UploadService {
       fs.mkdirSync(path, { recursive: true })
     }
 
-    fs.renameSync(files.poster[0].path, join(path, files.poster[0].filename))
+    fs.renameSync(files.cover[0].path, join(path, files.cover[0].filename))
     fs.renameSync(files.audio[0].path, join(path, files.audio[0].filename))
   }
 
@@ -53,12 +53,12 @@ export class UploadService {
 
     if (isDuplicateTitle) {
       const audioFilePath = `${files.audio[0].destination}/${files.audio[0].filename}`
-      const posterFilePath = `${files.poster[0].destination}/${files.poster[0].filename}`
+      const coverFilePath = `${files.cover[0].destination}/${files.cover[0].filename}`
 
       try {
         await Promise.all([
           this.deleteFile(audioFilePath),
-          this.deleteFile(posterFilePath)
+          this.deleteFile(coverFilePath)
         ])
       } catch (err) {
         console.error('Ошибка при удалении файлов:', err)
@@ -102,7 +102,7 @@ export class UploadService {
         data: {
           artistId: artist.id,
           title: artistDto.trackTitle,
-          poster: `${dbPath}/${files.poster[0].filename}`,
+          cover: `${dbPath}/${files.cover[0].filename}`,
           track: `${dbPath}/${files.audio[0].filename}`,
           featuring,
           duration
@@ -118,7 +118,7 @@ export class UploadService {
       data: {
         artistId: isHasArtist.id,
         title: artistDto.trackTitle,
-        poster: `${dbPath}/${files.poster[0].filename}`,
+        cover: `${dbPath}/${files.cover[0].filename}`,
         track: `${dbPath}/${files.audio[0].filename}`,
         featuring,
         duration
