@@ -6,8 +6,11 @@ import { FavoriteTrackDto } from 'src/types/track.interface'
 export class TrackService {
   constructor(private prisma: PrismaService) {}
 
-  async getAllTracks() {
-    const userId = '65477d0a2a5f42e9ad181a5b'
+  async getAllTracks(userId: string) {
+    const allArtists = await this.prisma.artist.findMany()
+
+    console.debug(allArtists, 'allArtists')
+
     return this.prisma.track
       .findMany({
         include: {
@@ -24,13 +27,16 @@ export class TrackService {
         tracks.map((track) => {
           const artist = track.Artist
           delete track.Artist
-          const favoriteBy = track.favoriteBy.find(
-            (fav) => fav.userId === userId
+          const favoriteBy =
+            track.favoriteBy.find((fav) => fav.userId === userId) ?? null
+          const featuring = allArtists.filter((artist) =>
+            track.featuring.includes(artist.name)
           )
           return {
             ...track,
             artist,
-            favoriteBy: favoriteBy ?? null
+            featuring,
+            favoriteBy
           }
         })
       )

@@ -139,6 +139,35 @@ export class AuthService {
     })
   }
 
+  async signInWithAt(sub: string, email: string) {
+    const tokens = await this.getTokens(sub, email)
+
+    const isVerify = await this.jwtService.verify(tokens.access_token, {
+      secret: process.env.AT_SECRET_KEY
+    })
+
+    if (!isVerify) {
+      throw new HttpException('Access Denied', HttpStatus.FORBIDDEN)
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: isVerify.email
+      }
+    })
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+    }
+
+    delete user.refreshToken
+
+    return {
+      ...user,
+      ...tokens
+    }
+  }
+
   hashData(data: string) {
     return bcrypt.hash(data, 10)
   }

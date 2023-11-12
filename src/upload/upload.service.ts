@@ -18,16 +18,39 @@ export class UploadService {
     fs.renameSync(files.audio[0].path, join(path, files.audio[0].filename))
   }
 
-  private deleteFile = (filePath: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve()
-        }
-      })
-    })
+  private deleteFiles = async (files: Upload) => {
+    const audioFilePath = `${files.audio[0].destination}/${files.audio[0].filename}`
+    const coverFilePath = `${files.cover[0].destination}/${files.cover[0].filename}`
+
+    try {
+      await Promise.all([
+        new Promise<void>((resolve, reject) => {
+          fs.unlink(audioFilePath, (err) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve()
+            }
+          })
+        }),
+        new Promise<void>((resolve, reject) => {
+          fs.unlink(coverFilePath, (err) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve()
+            }
+          })
+        })
+      ])
+    } catch (err) {
+      console.error('Ошибка при удалении файлов:', err)
+    }
+
+    throw new HttpException(
+      'There is already such a track',
+      HttpStatus.CONFLICT
+    )
   }
 
   private formatDuration(seconds: number): string {
@@ -52,27 +75,36 @@ export class UploadService {
     })
 
     if (isDuplicateTitle) {
-      const audioFilePath = `${files.audio[0].destination}/${files.audio[0].filename}`
-      const coverFilePath = `${files.cover[0].destination}/${files.cover[0].filename}`
-
-      try {
-        await Promise.all([
-          this.deleteFile(audioFilePath),
-          this.deleteFile(coverFilePath)
-        ])
-      } catch (err) {
-        console.error('Ошибка при удалении файлов:', err)
-      }
-
-      throw new HttpException(
-        'There is already such a track',
-        HttpStatus.CONFLICT
-      )
+      this.deleteFiles(files)
     }
 
-    const isHasArtist = await this.prisma.artist.findFirst({
-      where: { name: artistDto.artistName }
+    const parsedFeaturing = JSON.parse(artistDto.featuring) as string[]
+
+    const featuring = await this.prisma.artist.findMany({
+      where: {
+        name: {
+          in: parsedFeaturing.map((name) => name)
+        }
+      }
     })
+
+    const createArtist = parsedFeaturing.filter(
+      (artist) => !featuring.some((featArtist) => artist === featArtist.name)
+    )
+
+    if (createArtist.length > 0) {
+      try {
+        await this.prisma.artist.createMany({
+          data: createArtist.map((name) => ({ name }))
+        })
+      } catch (error) {
+        console.error('Error creating artists', error)
+        throw new HttpException(
+          'Error creating artists',
+          HttpStatus.BAD_REQUEST
+        )
+      }
+    }
 
     const artistFolderPath = join(
       process.cwd(),
@@ -85,42 +117,23 @@ export class UploadService {
       .replace('.', '')
       .replace(' ', '-')}`
 
-    const featuring = JSON.parse(artistDto.featuring)
-
     const duration = await parseFile(
       `${files.audio[0].destination}/${files.audio[0].filename}`
     ).then((res) => this.formatDuration(res.format.duration))
 
-    if (!isHasArtist) {
-      const artist = await this.prisma.artist.create({
-        data: {
-          name: artistDto.artistName
-        }
+    const mainArtistId = await this.prisma.artist
+      .findFirst({
+        where: { name: artistDto.artistName }
       })
+      .then((res) => res.id)
 
-      const track = await this.prisma.track.create({
-        data: {
-          artistId: artist.id,
-          title: artistDto.trackTitle,
-          cover: `${dbPath}/${files.cover[0].filename}`,
-          track: `${dbPath}/${files.audio[0].filename}`,
-          featuring,
-          duration
-        }
-      })
-
-      this.createFiles(artistFolderPath, files)
-
-      return { message: 'Files uploaded successfully' }
-    }
-
-    const track = await this.prisma.track.create({
+    await this.prisma.track.create({
       data: {
-        artistId: isHasArtist.id,
+        artistId: mainArtistId,
         title: artistDto.trackTitle,
         cover: `${dbPath}/${files.cover[0].filename}`,
         track: `${dbPath}/${files.audio[0].filename}`,
-        featuring,
+        featuring: parsedFeaturing,
         duration
       }
     })

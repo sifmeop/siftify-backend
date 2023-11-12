@@ -46,4 +46,10 @@ export class AuthController {
   ) {
     return this.authService.refreshTokens(userId, refreshToken)
   }
+
+  @Post('/sign-in/access-token')
+  @HttpCode(HttpStatus.OK)
+  signInWithAt(@GetCurrentUser() data: { sub: string; email: string }) {
+    return this.authService.signInWithAt(data.sub, data.email)
+  }
 }

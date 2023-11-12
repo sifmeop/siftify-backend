@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post } from '@nestjs/common'
 import { Public } from 'src/common/decorators'
 import { FavoriteTrackDto } from 'src/types/track.interface'
 import { TrackService } from './track.service'
@@ -8,9 +8,9 @@ export class TrackController {
   constructor(private readonly trackService: TrackService) {}
 
   @Public()
-  @Get('/all')
-  getAllTracks() {
-    return this.trackService.getAllTracks()
+  @Get('/all/:userId')
+  getAllTracks(@Param('userId') userId: string) {
+    return this.trackService.getAllTracks(userId)
   }
 
   @Public()
