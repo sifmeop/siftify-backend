@@ -4,7 +4,6 @@ export interface Upload {
 }
 
 export interface UploadArtistDto {
-  artistName: string
   trackTitle: string
   featuring: string
 }

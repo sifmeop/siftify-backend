@@ -47,9 +47,9 @@ export class AuthController {
     return this.authService.refreshTokens(userId, refreshToken)
   }
 
-  @Post('/sign-in/access-token')
+  @Post('/sign-in/verify-token')
   @HttpCode(HttpStatus.OK)
-  signInWithAt(@GetCurrentUser() data: { sub: string; email: string }) {
-    return this.authService.signInWithAt(data.sub, data.email)
+  verifyToken(@GetCurrentUser() data: { sub: string; email: string }) {
+    return this.authService.verifyToken(data.sub, data.email)
   }
 }

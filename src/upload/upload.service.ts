@@ -46,11 +46,6 @@ export class UploadService {
     } catch (err) {
       console.error('Ошибка при удалении файлов:', err)
     }
-
-    throw new HttpException(
-      'There is already such a track',
-      HttpStatus.CONFLICT
-    )
   }
 
   private formatDuration(seconds: number): string {
@@ -76,9 +71,16 @@ export class UploadService {
 
     if (isDuplicateTitle) {
       this.deleteFiles(files)
+
+      throw new HttpException(
+        'There is already such a track',
+        HttpStatus.CONFLICT
+      )
     }
 
     const parsedFeaturing = JSON.parse(artistDto.featuring) as string[]
+
+    const artistName = parsedFeaturing[0]
 
     const featuring = await this.prisma.artist.findMany({
       where: {
@@ -109,10 +111,10 @@ export class UploadService {
     const artistFolderPath = join(
       process.cwd(),
       'public/artists',
-      artistDto.artistName.toLowerCase().replace('.', '').replace(' ', '-')
+      artistName.toLowerCase().replace('.', '').replace(' ', '-')
     )
 
-    const dbPath = `/artists/${artistDto.artistName
+    const dbPath = `/artists/${artistName
       .toLowerCase()
       .replace('.', '')
       .replace(' ', '-')}`
@@ -123,7 +125,7 @@ export class UploadService {
 
     const mainArtistId = await this.prisma.artist
       .findFirst({
-        where: { name: artistDto.artistName }
+        where: { name: artistName }
       })
       .then((res) => res.id)
 

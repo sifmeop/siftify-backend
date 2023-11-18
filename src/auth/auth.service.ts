@@ -139,7 +139,7 @@ export class AuthService {
     })
   }
 
-  async signInWithAt(sub: string, email: string) {
+  async verifyToken(sub: string, email: string) {
     const tokens = await this.getTokens(sub, email)
 
     const isVerify = await this.jwtService.verify(tokens.access_token, {
@@ -178,7 +178,7 @@ export class AuthService {
         { sub, email },
         {
           secret: process.env.AT_SECRET_KEY,
-          expiresIn: 60 * 15
+          expiresIn: 60 * 60 * 24
         }
       ),
       this.jwtService.signAsync(

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
-import { FavoriteTrackDto } from 'src/types/track.interface'
 
 @Injectable()
 export class TrackService {
@@ -8,8 +7,6 @@ export class TrackService {
 
   async getAllTracks(userId: string) {
     const allArtists = await this.prisma.artist.findMany()
-
-    console.debug(allArtists, 'allArtists')
 
     return this.prisma.track
       .findMany({
@@ -42,9 +39,13 @@ export class TrackService {
       )
   }
 
-  async addTrackToFavorites(favTrackDto: FavoriteTrackDto) {
-    const { userId = '65477d0a2a5f42e9ad181a5b', trackId } = favTrackDto
+  async getTrack(id: string) {
+    return this.prisma.track.findFirst({
+      where: { id }
+    })
+  }
 
+  async addTrackToFavorites(userId: string, trackId: string) {
     return this.prisma.favoriteTrack.create({
       data: { userId, trackId }
     })
