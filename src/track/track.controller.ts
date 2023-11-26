@@ -18,6 +18,12 @@ export class TrackController {
     return this.trackService.getAllTracks(userId)
   }
 
+  @Public()
+  @Post('/listening')
+  listeningTrack(@Body() body: { id: string }) {
+    return this.trackService.listeningTrack(body.id)
+  }
+
   @Post('/favorite/add')
   addTrackToFavorites(
     @GetCurrentUserId() userId: string,

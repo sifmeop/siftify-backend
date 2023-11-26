@@ -45,15 +45,28 @@ export class TrackService {
     })
   }
 
+  async listeningTrack(id: string) {
+    return this.prisma.track.update({
+      data: {
+        listening: {
+          increment: 1
+        }
+      },
+      where: {
+        id
+      }
+    })
+  }
+
   async addTrackToFavorites(userId: string, trackId: string) {
     return this.prisma.favoriteTrack.create({
       data: { userId, trackId }
     })
   }
 
-  async removeTrackFromFavorites(id: string) {
-    return this.prisma.favoriteTrack.delete({
-      where: { id }
+  async removeTrackFromFavorites(trackId: string) {
+    return this.prisma.favoriteTrack.deleteMany({
+      where: { trackId }
     })
   }
 }

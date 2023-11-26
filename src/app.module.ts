@@ -7,6 +7,7 @@ import { ArtistModule } from './artist/artist.module'
 import { AuthModule } from './auth/auth.module'
 import { AtGuard } from './common/guards'
 import { PrismaModule } from './prisma/prisma.module'
+import { SearchModule } from './search/search.module'
 import { TrackModule } from './track/track.module'
 import { UploadModule } from './upload/upload.module'
 import { UserModule } from './user/user.module'
@@ -22,7 +23,8 @@ import { UserModule } from './user/user.module'
     PrismaModule,
     UploadModule,
     TrackModule,
-    ArtistModule
+    ArtistModule,
+    SearchModule
   ],
   providers: [
     {

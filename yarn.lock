@@ -854,6 +854,11 @@
   resolved "https://registry.yarnpkg.com/@prisma/engines/-/engines-5.5.2.tgz#fe0d2361a48c7d59568ccf0d35c75432594e1ac1"
   integrity sha512-Be5hoNF8k+lkB3uEMiCHbhbfF6aj1GnrTBnn5iYFT7GEr3TsOEp1soviEcBR0tYCgHbxjcIxJMhdbvxALJhAqg==
 
+"@reatom/core@^3.6.5":
+  version "3.6.5"
+  resolved "https://registry.yarnpkg.com/@reatom/core/-/core-3.6.5.tgz#5d13030d5c2aa56a1d319c01dc9008f7eaa2d941"
+  integrity sha512-X0zUAXZPlLY9V99l4VgvYllQ63lswlAsqQYm0poNoW3KkthVrwQLkXSaZGCpV5TaOmhLaNEaJ89PlQHjjlE9rw==
+
 "@sinclair/typebox@^0.27.8":
   version "0.27.8"
   resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.27.8.tgz#6667fac16c436b5434a387a34dedb013198f6e6e"
