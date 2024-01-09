@@ -11,6 +11,9 @@ export class SearchService {
         title: {
           contains: value,
           mode: 'insensitive'
+        },
+        trackStatus: {
+          status: 'UPLOADED'
         }
       }
     })
@@ -23,6 +26,17 @@ export class SearchService {
       }
     })
 
-    return [...tracks, ...artists]
+    return { tracks, artists }
+  }
+
+  async searchArtist(name: string) {
+    return this.prisma.artist.findMany({
+      where: {
+        name: {
+          contains: name,
+          mode: 'insensitive'
+        }
+      }
+    })
   }
 }

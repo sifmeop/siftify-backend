@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common'
 import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
-import { Public } from 'src/common/decorators'
 import { Upload, UploadArtistDto } from 'src/types/upload.interface'
 import { UploadService } from './upload.service'
 
@@ -15,7 +14,6 @@ import { UploadService } from './upload.service'
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
-  @Public()
   @Post('/track')
   @UseInterceptors(
     FileFieldsInterceptor(

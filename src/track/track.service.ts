@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
 
 @Injectable()
@@ -10,9 +10,14 @@ export class TrackService {
 
     return this.prisma.track
       .findMany({
+        where: {
+          trackStatus: {
+            status: 'UPLOADED'
+          }
+        },
         include: {
           favoriteBy: true,
-          Artist: {
+          artist: {
             select: {
               name: true,
               artistPhoto: true
@@ -22,8 +27,8 @@ export class TrackService {
       })
       .then((tracks) =>
         tracks.map((track) => {
-          const artist = track.Artist
-          delete track.Artist
+          const artist = track.artist
+          delete track.artist
           const favoriteBy =
             track.favoriteBy.find((fav) => fav.userId === userId) ?? null
           const featuring = allArtists.filter((artist) =>
@@ -46,7 +51,26 @@ export class TrackService {
   }
 
   async listeningTrack(id: string) {
-    return this.prisma.track.update({
+    const track = await this.prisma.track.findFirst({
+      where: { id }
+    })
+
+    if (!track) {
+      throw new Error('Track not found')
+    }
+
+    await this.prisma.artist.update({
+      data: {
+        listening: {
+          increment: 1
+        }
+      },
+      where: {
+        id: track.artistId
+      }
+    })
+
+    await this.prisma.track.update({
       data: {
         listening: {
           increment: 1
@@ -56,6 +80,8 @@ export class TrackService {
         id
       }
     })
+
+    return { code: HttpStatus.OK, message: 'Track successfully listened' }
   }
 
   async addTrackToFavorites(userId: string, trackId: string) {

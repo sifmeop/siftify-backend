@@ -13,6 +13,12 @@ enum UserRole {
   ADMIN
 }
 
+enum UploadTrackStatus {
+  PENDING
+  UPLOADED
+  REJECTED
+}
+
 model User {
   id             String          @id @default(auto()) @map("_id") @db.ObjectId
   uId            Int
@@ -21,44 +27,57 @@ model User {
   username       String          @unique
   role           UserRole        @default(USER)
   refreshToken   String?
-  created_at     DateTime        @default(now())
-  updated_at     DateTime        @updatedAt
+  createdAt      DateTime        @default(now())
   favoriteTracks FavoriteTrack[]
-  Playlist       Playlist[]
+  playlists      Playlist[]
+  artistId       String?
 }
 
 model Artist {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
   artistPhoto String?
-  name        String  @unique
+  name        String        @unique
   tracks      Track[]
-  listening   Int     @default(0)
-  Album       Album[]
+  listening   Int           @default(0)
+  albums      Album[]
+  userId      String?
+  TrackStatus TrackStatus[]
+}
+
+model TrackStatus {
+  id       String            @id @default(auto()) @map("_id") @db.ObjectId
+  status   UploadTrackStatus @default(PENDING)
+  reson    String?
+  artist   Artist            @relation(fields: [artistId], references: [id])
+  artistId String            @db.ObjectId
+  track    Track             @relation(fields: [trackId], references: [id])
+  trackId  String            @unique @db.ObjectId
 }
 
 model Track {
-  id         String          @id @default(auto()) @map("_id") @db.ObjectId
-  title      String
-  cover      String
-  track      String
-  featuring  String[]
-  Artist     Artist?         @relation(fields: [artistId], references: [id])
-  artistId   String?         @db.ObjectId
-  listening  Int             @default(0)
-  added_at   DateTime        @default(now())
-  duration   String
-  favoriteBy FavoriteTrack[]
-  Playlist   Playlist?       @relation(fields: [playlistId], references: [id])
-  playlistId String?         @db.ObjectId
-  Album      Album?          @relation(fields: [albumId], references: [id])
-  albumId    String?         @db.ObjectId
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  cover       String
+  track       String
+  featuring   String[]
+  artist      Artist?         @relation(fields: [artistId], references: [id])
+  artistId    String?         @db.ObjectId
+  listening   Int             @default(0)
+  added_at    DateTime        @default(now())
+  duration    String
+  favoriteBy  FavoriteTrack[]
+  playlist    Playlist?       @relation(fields: [playlistId], references: [id])
+  playlistId  String?         @db.ObjectId
+  album       Album?          @relation(fields: [albumId], references: [id])
+  albumId     String?         @db.ObjectId
+  trackStatus TrackStatus?
 }
 
 model FavoriteTrack {
   id       String   @id @default(auto()) @map("_id") @db.ObjectId
   track    Track    @relation(fields: [trackId], references: [id])
   trackId  String   @db.ObjectId
-  User     User     @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
   userId   String   @db.ObjectId
   added_at DateTime @default(now())
 }
@@ -66,7 +85,7 @@ model FavoriteTrack {
 model Playlist {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   title     String
-  User      User    @relation(fields: [userId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
   userId    String  @db.ObjectId
   tracks    Track[]
   listening Int     @default(0)
@@ -74,7 +93,7 @@ model Playlist {
 
 model Album {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  Artist    Artist  @relation(fields: [artistId], references: [id])
+  artist    Artist  @relation(fields: [artistId], references: [id])
   artistId  String  @db.ObjectId
   title     String
   cover     String

@@ -36,13 +36,15 @@ export class AuthService {
       )
     }
 
-    let uId = 1
+    let uId = 100000
 
-    const lastUser = await this.prisma.user.findFirst({
-      orderBy: { uId: 'desc' }
+    const lastUser = await this.prisma.user.aggregate({
+      _max: {
+        uId: true
+      }
     })
 
-    if (lastUser) uId = lastUser.uId + 1
+    if (lastUser) uId = lastUser._max.uId + 1
 
     const newUser: User = await this.prisma.user.create({
       data: {
@@ -150,7 +152,7 @@ export class AuthService {
       throw new HttpException('Access Denied', HttpStatus.FORBIDDEN)
     }
 
-    const user = await this.prisma.user.findFirst({
+    let user: any = await this.prisma.user.findFirst({
       where: {
         email: isVerify.email
       }
@@ -158,6 +160,16 @@ export class AuthService {
 
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+    }
+
+    if (user.role === 'ARTIST') {
+      const artist = await this.prisma.artist.findFirst({
+        where: { userId: user.id }
+      })
+      user = {
+        ...user,
+        artistName: artist.name
+      }
     }
 
     delete user.refreshToken

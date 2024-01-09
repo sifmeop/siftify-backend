@@ -136,7 +136,13 @@ export class UploadService {
         cover: `${dbPath}/${files.cover[0].filename}`,
         track: `${dbPath}/${files.audio[0].filename}`,
         featuring: parsedFeaturing,
-        duration
+        duration,
+        trackStatus: {
+          create: {
+            status: 'PENDING',
+            artistId: mainArtistId
+          }
+        }
       }
     })
 
