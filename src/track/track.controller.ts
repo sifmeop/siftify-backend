@@ -33,7 +33,10 @@ export class TrackController {
   }
 
   @Post('/favorite/remove')
-  removeTrackFromFavorites(@Body() body: { id: string }) {
-    return this.trackService.removeTrackFromFavorites(body.id)
+  removeTrackFromFavorites(
+    @GetCurrentUserId() userId: string,
+    @Body() body: { trackId: string }
+  ) {
+    return this.trackService.removeTrackFromFavorites(userId, body.trackId)
   }
 }

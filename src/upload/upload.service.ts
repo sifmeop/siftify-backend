@@ -2,6 +2,8 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import * as fs from 'fs'
 import { parseFile } from 'music-metadata'
 import { join } from 'path'
+import { generateEmail } from 'src/common/libs/generateEmail'
+import { generatePassword } from 'src/common/libs/generatePassword'
 import { PrismaService } from 'src/prisma/prisma.service'
 import { Upload, UploadArtistDto } from 'src/types/upload.interface'
 
@@ -94,10 +96,47 @@ export class UploadService {
       (artist) => !featuring.some((featArtist) => artist === featArtist.name)
     )
 
-    if (createArtist.length > 0) {
+    if (createArtist.length) {
       try {
+        let uId = 100000
+
+        const lastUser = await this.prisma.user.aggregate({
+          _max: {
+            uId: true
+          }
+        })
+
+        uId = lastUser._max.uId
+
+        const createdUser = await Promise.all(
+          createArtist.map(async (name) => {
+            uId += 1
+            const { password, hashedPassword } = await generatePassword()
+            const user = await this.prisma.user.create({
+              data: {
+                uId,
+                email: generateEmail(name),
+                username: name,
+                password: hashedPassword,
+                role: 'ARTIST'
+              }
+            })
+
+            await this.prisma.userPlainPassword.create({
+              data: {
+                userId: user.id,
+                password
+              }
+            })
+
+            return user
+          })
+        )
         await this.prisma.artist.createMany({
-          data: createArtist.map((name) => ({ name }))
+          data: createdUser.map(({ username, id }) => ({
+            name: username,
+            userId: id
+          }))
         })
       } catch (error) {
         console.error('Error creating artists', error)
@@ -129,13 +168,27 @@ export class UploadService {
       })
       .then((res) => res.id)
 
+    const artistCreated = await this.prisma.artist.findMany({
+      where: {
+        name: {
+          in: parsedFeaturing.map((name) => name)
+        }
+      }
+    })
+
     await this.prisma.track.create({
       data: {
         artistId: mainArtistId,
         title: artistDto.trackTitle,
         cover: `${dbPath}/${files.cover[0].filename}`,
         track: `${dbPath}/${files.audio[0].filename}`,
-        featuring: parsedFeaturing,
+        featuring: {
+          createMany: {
+            data: artistCreated.map((featArtist) => ({
+              artistId: featArtist.id
+            }))
+          }
+        },
         duration,
         trackStatus: {
           create: {

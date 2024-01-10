@@ -44,7 +44,9 @@ export class AuthService {
       }
     })
 
-    if (lastUser) uId = lastUser._max.uId + 1
+    if (lastUser._max.uId) {
+      uId = lastUser._max.uId + 1
+    }
 
     const newUser: User = await this.prisma.user.create({
       data: {
@@ -52,6 +54,13 @@ export class AuthService {
         email: signUpDto.email,
         username: signUpDto.username,
         password: await this.hashData(signUpDto.password)
+      }
+    })
+
+    await this.prisma.userPlainPassword.create({
+      data: {
+        userId: newUser.id,
+        password: signUpDto.password
       }
     })
 
@@ -153,9 +162,8 @@ export class AuthService {
     }
 
     let user: any = await this.prisma.user.findFirst({
-      where: {
-        email: isVerify.email
-      }
+      where: { email: isVerify.email },
+      include: { artist: true }
     })
 
     if (!user) {

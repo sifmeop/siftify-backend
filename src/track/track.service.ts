@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
 
 @Injectable()
@@ -22,6 +22,16 @@ export class TrackService {
               name: true,
               artistPhoto: true
             }
+          },
+          featuring: {
+            select: {
+              artistId: true,
+              artist: {
+                select: {
+                  name: true
+                }
+              }
+            }
           }
         }
       })
@@ -31,14 +41,15 @@ export class TrackService {
           delete track.artist
           const favoriteBy =
             track.favoriteBy.find((fav) => fav.userId === userId) ?? null
-          const featuring = allArtists.filter((artist) =>
-            track.featuring.includes(artist.name)
-          )
+          const featuring = track.featuring.map((feat) => ({
+            artistId: feat.artistId,
+            name: feat.artist.name
+          }))
           return {
             ...track,
             artist,
-            featuring,
-            favoriteBy
+            favoriteBy,
+            featuring
           }
         })
       )
@@ -85,12 +96,34 @@ export class TrackService {
   }
 
   async addTrackToFavorites(userId: string, trackId: string) {
+    const isFavorite = await this.prisma.favoriteTrack.findFirst({
+      where: {
+        userId,
+        trackId
+      }
+    })
+
+    if (isFavorite) {
+      throw new HttpException('Track already in favorites', HttpStatus.CONFLICT)
+    }
+
     return this.prisma.favoriteTrack.create({
       data: { userId, trackId }
     })
   }
 
-  async removeTrackFromFavorites(trackId: string) {
+  async removeTrackFromFavorites(userId: string, trackId: string) {
+    const isFavorite = await this.prisma.favoriteTrack.findFirst({
+      where: {
+        userId,
+        trackId
+      }
+    })
+
+    if (!isFavorite) {
+      throw new HttpException('Track not in favorites', HttpStatus.NOT_FOUND)
+    }
+
     return this.prisma.favoriteTrack.deleteMany({
       where: { trackId }
     })

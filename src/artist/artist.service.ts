@@ -29,7 +29,7 @@ export class ArtistService {
       throw new HttpException('Artist already exists', HttpStatus.CONFLICT)
     }
 
-    const artist = await this.prisma.artist.create({
+    await this.prisma.artist.create({
       data: {
         name: body.name,
         userId
@@ -39,8 +39,10 @@ export class ArtistService {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        role: 'ARTIST',
-        artistId: artist.id
+        role: 'ARTIST'
+      },
+      include: {
+        artist: true
       }
     })
   }

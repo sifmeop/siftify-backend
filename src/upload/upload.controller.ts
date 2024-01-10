@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common'
 import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
+import { GetCurrentUserId } from 'src/common/decorators'
 import { Upload, UploadArtistDto } from 'src/types/upload.interface'
 import { UploadService } from './upload.service'
 
@@ -36,7 +37,8 @@ export class UploadController {
   )
   uploadTrack(
     @UploadedFiles() files: Upload,
-    @Body() artistDto: UploadArtistDto
+    @Body() artistDto: UploadArtistDto,
+    @GetCurrentUserId() userId: string
   ) {
     return this.uploadService.uploadTrack(files, artistDto)
   }
