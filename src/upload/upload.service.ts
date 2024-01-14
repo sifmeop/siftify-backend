@@ -1,11 +1,19 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import { Artist, Track } from '@prisma/client'
 import * as fs from 'fs'
 import { parseFile } from 'music-metadata'
 import { join } from 'path'
 import { generateEmail } from 'src/common/libs/generateEmail'
 import { generatePassword } from 'src/common/libs/generatePassword'
 import { PrismaService } from 'src/prisma/prisma.service'
-import { Upload, UploadArtistDto } from 'src/types/upload.interface'
+import {
+  ParsedUploadDtoWithFeat,
+  ParsedUploadDtoWithoutFeat,
+  Upload,
+  UploadDtoBody,
+  UploadDtoWithFeat,
+  UploadFeaturing
+} from 'src/types/upload.interface'
 
 @Injectable()
 export class UploadService {
@@ -15,40 +23,44 @@ export class UploadService {
     if (!fs.existsSync(path)) {
       fs.mkdirSync(path, { recursive: true })
     }
+    console.log('tracksFiles')
+    console.dir(files.tracksFiles, { depth: null })
+    files.tracksFiles.forEach((file) => {
+      fs.renameSync(file.path, join(path, file.filename))
+    })
 
     fs.renameSync(files.cover[0].path, join(path, files.cover[0].filename))
-    fs.renameSync(files.audio[0].path, join(path, files.audio[0].filename))
   }
 
-  private deleteFiles = async (files: Upload) => {
-    const audioFilePath = `${files.audio[0].destination}/${files.audio[0].filename}`
-    const coverFilePath = `${files.cover[0].destination}/${files.cover[0].filename}`
+  // private deleteFiles = async (files: Upload) => {
+  //   const audioFilePath = `${files.audio[0].destination}/${files.audio[0].filename}`
+  //   const coverFilePath = `${files.cover[0].destination}/${files.cover[0].filename}`
 
-    try {
-      await Promise.all([
-        new Promise<void>((resolve, reject) => {
-          fs.unlink(audioFilePath, (err) => {
-            if (err) {
-              reject(err)
-            } else {
-              resolve()
-            }
-          })
-        }),
-        new Promise<void>((resolve, reject) => {
-          fs.unlink(coverFilePath, (err) => {
-            if (err) {
-              reject(err)
-            } else {
-              resolve()
-            }
-          })
-        })
-      ])
-    } catch (err) {
-      console.error('Ошибка при удалении файлов:', err)
-    }
-  }
+  //   try {
+  //     await Promise.all([
+  //       new Promise<void>((resolve, reject) => {
+  //         fs.unlink(audioFilePath, (err) => {
+  //           if (err) {
+  //             reject(err)
+  //           } else {
+  //             resolve()
+  //           }
+  //         })
+  //       }),
+  //       new Promise<void>((resolve, reject) => {
+  //         fs.unlink(coverFilePath, (err) => {
+  //           if (err) {
+  //             reject(err)
+  //           } else {
+  //             resolve()
+  //           }
+  //         })
+  //       })
+  //     ])
+  //   } catch (err) {
+  //     console.error('Ошибка при удалении файлов:', err)
+  //   }
+  // }
 
   private formatDuration(seconds: number): string {
     const minutes = Math.floor(seconds / 60)
@@ -60,146 +72,198 @@ export class UploadService {
     return `${formattedMinutes}:${formattedSeconds}`
   }
 
-  async uploadTrack(files: Upload, artistDto: UploadArtistDto) {
-    const isDuplicateTitle = await this.prisma.artist.findFirst({
+  private findNewArtists(data: ParsedUploadDtoWithFeat[]): string[] {
+    let featuring = data.flatMap((item) => item.featuring)
+    featuring = featuring.filter((artist) => artist.isNew)
+
+    const newArtists = new Set<string>()
+    for (const { label } of featuring) {
+      if (!newArtists.has(label)) {
+        newArtists.add(label)
+      }
+    }
+
+    return Array.from(newArtists)
+  }
+
+  async uploadTrack(userId: string, files: Upload, artistDto: UploadDtoBody) {
+    const user = await this.prisma.user.findFirst({
       where: {
-        tracks: {
-          some: {
-            title: artistDto.trackTitle
-          }
-        }
+        id: userId
+      },
+      include: {
+        artist: true
       }
     })
 
-    if (isDuplicateTitle) {
-      this.deleteFiles(files)
+    const parsedResponse = JSON.parse(
+      artistDto.tracksData
+    ) as ParsedUploadDtoWithoutFeat[]
 
+    const parsedDto = parsedResponse.map((item) => {
+      const featuring = JSON.parse(item.featuring)
+      return {
+        ...item,
+        featuring
+      }
+    }) as ParsedUploadDtoWithFeat[]
+
+    const isDuplicateTitle = await Promise.all(
+      parsedDto.map(async (track) => {
+        return await this.prisma.track.findFirst({
+          where: {
+            artistId: user.artist.id,
+            title: track.title
+          }
+        })
+      })
+    )
+
+    const filterDuplicateTitle = isDuplicateTitle.filter(
+      (item) => item !== null
+    )
+
+    if (filterDuplicateTitle.length > 0) {
+      const titles = filterDuplicateTitle.map((item) => item.title).join(', ')
       throw new HttpException(
-        'There is already such a track',
+        'There is already such a tracks: ' + titles,
         HttpStatus.CONFLICT
       )
     }
 
-    const parsedFeaturing = JSON.parse(artistDto.featuring) as string[]
+    const findNewArtists = this.findNewArtists(parsedDto)
 
-    const artistName = parsedFeaturing[0]
+    const getListNewArtists = await Promise.all(
+      findNewArtists.map(async (name) => {
+        const artist = await this.prisma.artist.findFirst({
+          where: { name }
+        })
+        return artist ? null : name
+      })
+    )
+
+    const getNewArtists = getListNewArtists.filter((artist) => !!artist)
+
+    if (getNewArtists.length > 0) {
+      let lastUid = 100000
+
+      const lastUser = await this.prisma.user.aggregate({
+        _max: {
+          uId: true
+        }
+      })
+
+      lastUid = lastUser._max.uId
+
+      await Promise.all(
+        getNewArtists.map(async (name, index) => {
+          const uId = lastUid + index + 1
+          const { password, hashedPassword } = await generatePassword()
+          const user = await this.prisma.user.create({
+            data: {
+              uId,
+              email: generateEmail(name),
+              username: name,
+              password: hashedPassword,
+              role: 'ARTIST'
+            }
+          })
+
+          await this.prisma.userPlainPassword.create({
+            data: {
+              userId: user.id,
+              password
+            }
+          })
+
+          const artist = await this.prisma.artist.create({
+            data: {
+              userId: user.id,
+              name: user.username
+            }
+          })
+
+          return artist
+        })
+      )
+    }
+
+    const artistNames = parsedDto
+      .flatMap((item) => item.featuring)
+      .map((artist) => artist.label)
 
     const featuring = await this.prisma.artist.findMany({
       where: {
         name: {
-          in: parsedFeaturing.map((name) => name)
+          in: artistNames
         }
+      },
+      select: {
+        id: true,
+        name: true
       }
     })
 
-    const createArtist = parsedFeaturing.filter(
-      (artist) => !featuring.some((featArtist) => artist === featArtist.name)
-    )
-
-    if (createArtist.length) {
-      try {
-        let uId = 100000
-
-        const lastUser = await this.prisma.user.aggregate({
-          _max: {
-            uId: true
-          }
-        })
-
-        uId = lastUser._max.uId
-
-        const createdUser = await Promise.all(
-          createArtist.map(async (name) => {
-            uId += 1
-            const { password, hashedPassword } = await generatePassword()
-            const user = await this.prisma.user.create({
-              data: {
-                uId,
-                email: generateEmail(name),
-                username: name,
-                password: hashedPassword,
-                role: 'ARTIST'
-              }
-            })
-
-            await this.prisma.userPlainPassword.create({
-              data: {
-                userId: user.id,
-                password
-              }
-            })
-
-            return user
-          })
-        )
-        await this.prisma.artist.createMany({
-          data: createdUser.map(({ username, id }) => ({
-            name: username,
-            userId: id
-          }))
-        })
-      } catch (error) {
-        console.error('Error creating artists', error)
-        throw new HttpException(
-          'Error creating artists',
-          HttpStatus.BAD_REQUEST
-        )
-      }
-    }
-
-    const artistFolderPath = join(
-      process.cwd(),
-      'public/artists',
-      artistName.toLowerCase().replace('.', '').replace(' ', '-')
-    )
-
-    const dbPath = `/artists/${artistName
+    const artistFolderPath = `/artists/${user.artist.name
       .toLowerCase()
       .replace('.', '')
       .replace(' ', '-')}`
 
-    const duration = await parseFile(
-      `${files.audio[0].destination}/${files.audio[0].filename}`
-    ).then((res) => this.formatDuration(res.format.duration))
+    const getUpdateUploadTrackList: any = await Promise.all(
+      parsedDto.map(async (data, index) => {
+        const newFeaturing = data.featuring.map((artist) => {
+          const findArtist = featuring.find(
+            (item) => item.name === artist.label
+          )!.id
 
-    const mainArtistId = await this.prisma.artist
-      .findFirst({
-        where: { name: artistName }
+          return {
+            artistId: findArtist
+          }
+        })
+
+        const duration = await parseFile(
+          `${files.tracksFiles[0].destination}/${files.tracksFiles[0].filename}`
+        ).then((res) => this.formatDuration(res.format.duration))
+
+        return {
+          artistId: user.artist.id,
+          title: data.title,
+          cover: `${artistFolderPath}/${files.cover[0].filename}`,
+          track: `${artistFolderPath}/${files.tracksFiles[index].filename}`,
+          featuring: {
+            createMany: {
+              data: newFeaturing
+            }
+          },
+          duration,
+          trackStatus: {
+            create: {
+              status: 'PENDING',
+              artistId: user.artist.id
+            }
+          }
+        }
       })
-      .then((res) => res.id)
+    )
 
-    const artistCreated = await this.prisma.artist.findMany({
-      where: {
-        name: {
-          in: parsedFeaturing.map((name) => name)
-        }
-      }
-    })
-
-    await this.prisma.track.create({
+    await this.prisma.album.create({
       data: {
-        artistId: mainArtistId,
-        title: artistDto.trackTitle,
-        cover: `${dbPath}/${files.cover[0].filename}`,
-        track: `${dbPath}/${files.audio[0].filename}`,
-        featuring: {
-          createMany: {
-            data: artistCreated.map((featArtist) => ({
-              artistId: featArtist.id
-            }))
-          }
-        },
-        duration,
-        trackStatus: {
-          create: {
-            status: 'PENDING',
-            artistId: mainArtistId
-          }
+        artistId: user.artist.id,
+        title: artistDto.albumName ?? parsedDto[0].title,
+        cover: `${artistFolderPath}/${files.cover[0].filename}`,
+        tracks: {
+          create: await getUpdateUploadTrackList
         }
       }
     })
 
-    this.createFiles(artistFolderPath, files)
+    const createArtistFolderPath = join(
+      process.cwd(),
+      'public/artists',
+      user.artist.name.toLowerCase().replace('.', '').replace(' ', '-')
+    )
+
+    this.createFiles(createArtistFolderPath, files)
 
     return { message: 'Files uploaded successfully' }
   }

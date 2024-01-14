@@ -8,7 +8,7 @@ import {
 import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { GetCurrentUserId } from 'src/common/decorators'
-import { Upload, UploadArtistDto } from 'src/types/upload.interface'
+import { Upload, UploadDtoBody } from 'src/types/upload.interface'
 import { UploadService } from './upload.service'
 
 @Controller('upload')
@@ -20,12 +20,12 @@ export class UploadController {
     FileFieldsInterceptor(
       [
         { name: 'cover', maxCount: 1 },
-        { name: 'audio', maxCount: 1 }
+        { name: 'tracksFiles', maxCount: 30 }
       ],
       {
         storage: diskStorage({
           destination: (req, file, callback) => {
-            callback(null, './public')
+            callback(null, './public/temporarily-uploads')
           },
           filename: (req, file, callback) => {
             const filename = file.originalname
@@ -36,10 +36,10 @@ export class UploadController {
     )
   )
   uploadTrack(
+    @GetCurrentUserId() userId: string,
     @UploadedFiles() files: Upload,
-    @Body() artistDto: UploadArtistDto,
-    @GetCurrentUserId() userId: string
+    @Body() artistDto: UploadDtoBody
   ) {
-    return this.uploadService.uploadTrack(files, artistDto)
+    return this.uploadService.uploadTrack(userId, files, artistDto)
   }
 }

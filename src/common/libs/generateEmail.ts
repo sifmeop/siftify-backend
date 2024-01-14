@@ -5,7 +5,7 @@ export const generateEmail = (username: string): string => {
 
   const email = `${username
     .toLowerCase()
-    .replace(/\s/g, '')}${uniqueId}@${domain}`
+    .replace(/\s/g, '')}_${uniqueId}@${domain}`
 
   return email
 }

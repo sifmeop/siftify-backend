@@ -77,7 +77,8 @@ export class AuthService {
 
   async signIn(SignInDto: SignInDto): Promise<AuthResult> {
     const user = await this.prisma.user.findUnique({
-      where: { email: SignInDto.email }
+      where: { email: SignInDto.email },
+      include: { artist: true }
     })
 
     if (!user) {
