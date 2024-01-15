@@ -5,11 +5,6 @@ import { UserService } from './user.service'
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get()
-  getUsers() {
-    return 'asd'
-  }
-
   @Get(':id')
   getUser(@Param() id: string) {
     return this.userService.getUser(id)

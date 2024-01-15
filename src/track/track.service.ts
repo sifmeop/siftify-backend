@@ -6,8 +6,6 @@ export class TrackService {
   constructor(private prisma: PrismaService) {}
 
   async getAllTracks(userId: string) {
-    const allArtists = await this.prisma.artist.findMany()
-
     return this.prisma.track
       .findMany({
         where: {
@@ -21,6 +19,12 @@ export class TrackService {
             select: {
               name: true,
               artistPhoto: true
+            }
+          },
+          album: {
+            select: {
+              id: true,
+              title: true
             }
           },
           featuring: {
@@ -57,7 +61,15 @@ export class TrackService {
 
   async getTrack(id: string) {
     return this.prisma.track.findFirst({
-      where: { id }
+      where: { id },
+      include: {
+        artist: {
+          select: {
+            name: true,
+            artistPhoto: true
+          }
+        }
+      }
     })
   }
 

@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core'
 import { MulterModule } from '@nestjs/platform-express'
 import { ServeStaticModule } from '@nestjs/serve-static'
 import { join } from 'path'
+import { AlbumModule } from './album/album.module'
 import { ArtistModule } from './artist/artist.module'
 import { AuthModule } from './auth/auth.module'
 import { AtGuard } from './common/guards'
@@ -24,7 +25,8 @@ import { UserModule } from './user/user.module'
     UploadModule,
     TrackModule,
     ArtistModule,
-    SearchModule
+    SearchModule,
+    AlbumModule
   ],
   providers: [
     {
