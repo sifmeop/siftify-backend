@@ -25,7 +25,7 @@ export class UploadController {
       {
         storage: diskStorage({
           destination: (req, file, callback) => {
-            callback(null, './public/temporarily-uploads')
+            callback(null, `./public/temporarily-uploads`)
           },
           filename: (req, file, callback) => {
             const filename = file.originalname

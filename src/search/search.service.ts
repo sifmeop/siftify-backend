@@ -11,10 +11,10 @@ export class SearchService {
         title: {
           contains: value,
           mode: 'insensitive'
-        },
-        trackStatus: {
-          status: 'UPLOADED'
         }
+        // trackStatus: {
+        //   status: 'UPLOADED'
+        // }
       }
     })
     const artists = await this.prisma.artist.findMany({

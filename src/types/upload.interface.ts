@@ -28,3 +28,7 @@ export interface IFeaturing {
 export type ParsedUploadDtoWithoutFeat = UploadDto<string>
 export type ParsedUploadDtoWithFeat = UploadDto<UploadFeaturing[]>
 export type UploadDtoWithFeat = UploadDto<IFeaturing[]>
+
+export interface IUploadCover {
+  cover: Express.Multer.File
+}

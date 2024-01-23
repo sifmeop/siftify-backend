@@ -5,10 +5,15 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  Query
+  Query,
+  UploadedFiles,
+  UseInterceptors
 } from '@nestjs/common'
+import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { Artist, User } from '@prisma/client'
+import { diskStorage } from 'multer'
 import { GetCurrentUserId, Public } from 'src/common/decorators'
+import { IUploadCover } from 'src/types/upload.interface'
 import { ArtistService } from './artist.service'
 import { CreateArtistDto } from './dto'
 
@@ -28,11 +33,25 @@ export class ArtistController {
   }
 
   @Post('/')
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'cover', maxCount: 1 }], {
+      storage: diskStorage({
+        destination: (req, file, callback) => {
+          callback(null, `./public/temporarily-uploads`)
+        },
+        filename: (req, file, callback) => {
+          const filename = file.originalname
+          callback(null, filename)
+        }
+      })
+    })
+  )
   @HttpCode(HttpStatus.OK)
   createArtist(
-    @Body() body: CreateArtistDto,
-    @GetCurrentUserId() userId: string
+    @GetCurrentUserId() userId: string,
+    @UploadedFiles() file: IUploadCover,
+    @Body() body: CreateArtistDto
   ): Promise<User> {
-    return this.artistService.createArtist(body, userId)
+    return this.artistService.createArtist(body, file, userId)
   }
 }

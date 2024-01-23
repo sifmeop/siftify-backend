@@ -8,13 +8,17 @@ export class TrackService {
   async getAllTracks(userId: string) {
     return this.prisma.track
       .findMany({
-        where: {
-          trackStatus: {
-            status: 'UPLOADED'
-          }
-        },
+        // where: {
+        //   trackStatus: {
+        //     status: 'UPLOADED'
+        //   }
+        // },
         include: {
-          favoriteBy: true,
+          favoriteBy: {
+            select: {
+              userId: true
+            }
+          },
           artist: {
             select: {
               name: true,
@@ -43,8 +47,9 @@ export class TrackService {
         tracks.map((track) => {
           const artist = track.artist
           delete track.artist
-          const favoriteBy =
-            track.favoriteBy.find((fav) => fav.userId === userId) ?? null
+          const trackIsFavorite = track.favoriteBy.some(
+            (fav) => fav.userId === userId
+          )
           const featuring = track.featuring.map((feat) => ({
             artistId: feat.artistId,
             name: feat.artist.name
@@ -52,7 +57,7 @@ export class TrackService {
           return {
             ...track,
             artist,
-            favoriteBy,
+            trackIsFavorite,
             featuring
           }
         })
@@ -73,9 +78,11 @@ export class TrackService {
     })
   }
 
-  async listeningTrack(id: string) {
+  async listeningTrack(userId: string, trackId: string) {
     const track = await this.prisma.track.findFirst({
-      where: { id }
+      where: {
+        id: trackId
+      }
     })
 
     if (!track) {
@@ -100,7 +107,7 @@ export class TrackService {
         }
       },
       where: {
-        id
+        id: trackId
       }
     })
 

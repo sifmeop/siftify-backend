@@ -55,13 +55,13 @@ model Artist {
 
 model TrackStatus {
   id        String            @id @default(auto()) @map("_id") @db.ObjectId
-  status    UploadTrackStatus @default(PENDING)
+  status    UploadTrackStatus @default(UPLOADED)
   reson     String?
   artist    Artist            @relation(fields: [artistId], references: [id])
   artistId  String            @db.ObjectId
-  track     Track             @relation(fields: [trackId], references: [id])
-  trackId   String            @unique @db.ObjectId
   createdAt DateTime          @default(now())
+  album     Album             @relation(fields: [albumId], references: [id])
+  albumId   String            @unique @db.ObjectId
 }
 
 model Featuring {
@@ -73,23 +73,22 @@ model Featuring {
 }
 
 model Track {
-  id          String          @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  cover       String
-  track       String
-  featuring   Featuring[]
-  artist      Artist?         @relation(fields: [artistId], references: [id])
-  artistId    String?         @db.ObjectId
-  listening   Int             @default(0)
-  addedAt     DateTime        @default(now())
-  uploadedAt  DateTime?
-  duration    String
-  favoriteBy  FavoriteTrack[]
-  playlist    Playlist?       @relation(fields: [playlistId], references: [id])
-  playlistId  String?         @db.ObjectId
-  album       Album?          @relation(fields: [albumId], references: [id])
-  albumId     String?         @db.ObjectId
-  trackStatus TrackStatus?
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  cover      String
+  track      String
+  featuring  Featuring[]
+  artist     Artist?         @relation(fields: [artistId], references: [id])
+  artistId   String?         @db.ObjectId
+  listening  Int             @default(0)
+  addedAt    DateTime        @default(now())
+  uploadedAt DateTime?
+  duration   String
+  favoriteBy FavoriteTrack[]
+  playlist   Playlist?       @relation(fields: [playlistId], references: [id])
+  playlistId String?         @db.ObjectId
+  album      Album?          @relation(fields: [albumId], references: [id])
+  albumId    String?         @db.ObjectId
 }
 
 model FavoriteTrack {
@@ -102,20 +101,23 @@ model FavoriteTrack {
 }
 
 model Playlist {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   title     String
-  user      User    @relation(fields: [userId], references: [id])
-  userId    String  @db.ObjectId
+  cover     String?
+  isFixed   Boolean  @default(false)
   tracks    Track[]
-  listening Int     @default(0)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @db.ObjectId
 }
 
 model Album {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  artist    Artist   @relation(fields: [artistId], references: [id])
-  artistId  String   @db.ObjectId
-  title     String
-  cover     String
-  tracks    Track[]
-  createdAt DateTime @default(now())
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  artist      Artist       @relation(fields: [artistId], references: [id])
+  artistId    String       @db.ObjectId
+  title       String
+  cover       String
+  tracks      Track[]
+  createdAt   DateTime     @default(now())
+  trackStatus TrackStatus?
 }

@@ -1,18 +1,16 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
-import { Artist, Track } from '@prisma/client'
 import * as fs from 'fs'
 import { parseFile } from 'music-metadata'
 import { join } from 'path'
 import { generateEmail } from 'src/common/libs/generateEmail'
 import { generatePassword } from 'src/common/libs/generatePassword'
+import { getArtistsPath } from 'src/common/libs/getArtistsPath'
 import { PrismaService } from 'src/prisma/prisma.service'
 import {
   ParsedUploadDtoWithFeat,
   ParsedUploadDtoWithoutFeat,
   Upload,
-  UploadDtoBody,
-  UploadDtoWithFeat,
-  UploadFeaturing
+  UploadDtoBody
 } from 'src/types/upload.interface'
 
 @Injectable()
@@ -23,8 +21,6 @@ export class UploadService {
     if (!fs.existsSync(path)) {
       fs.mkdirSync(path, { recursive: true })
     }
-    console.log('tracksFiles')
-    console.dir(files.tracksFiles, { depth: null })
     files.tracksFiles.forEach((file) => {
       fs.renameSync(file.path, join(path, file.filename))
     })
@@ -204,12 +200,9 @@ export class UploadService {
       }
     })
 
-    const artistFolderPath = `/artists/${user.artist.name
-      .toLowerCase()
-      .replace('.', '')
-      .replace(' ', '-')}`
+    const artistFolderPath = getArtistsPath(user.artist.name)
 
-    const getUpdateUploadTrackList: any = await Promise.all(
+    const getUpdateUploadTrackList = await Promise.all(
       parsedDto.map(async (data, index) => {
         const newFeaturing = data.featuring.map((artist) => {
           const findArtist = featuring.find(
@@ -222,7 +215,7 @@ export class UploadService {
         })
 
         const duration = await parseFile(
-          `${files.tracksFiles[0].destination}/${files.tracksFiles[0].filename}`
+          `${files.tracksFiles[index].destination}/${files.tracksFiles[index].filename}`
         ).then((res) => this.formatDuration(res.format.duration))
 
         return {
@@ -235,18 +228,12 @@ export class UploadService {
               data: newFeaturing
             }
           },
-          duration,
-          trackStatus: {
-            create: {
-              status: 'PENDING',
-              artistId: user.artist.id
-            }
-          }
+          duration
         }
       })
     )
 
-    await this.prisma.album.create({
+    const album = await this.prisma.album.create({
       data: {
         artistId: user.artist.id,
         title: artistDto.albumName ?? parsedDto[0].title,
@@ -254,6 +241,13 @@ export class UploadService {
         tracks: {
           create: await getUpdateUploadTrackList
         }
+      }
+    })
+
+    await this.prisma.trackStatus.create({
+      data: {
+        artistId: user.artist.id,
+        albumId: album.id
       }
     })
 
