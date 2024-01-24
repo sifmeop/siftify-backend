@@ -17,11 +17,13 @@ export class TrackController {
   }
 
   @Post('/listening')
-  listeningTrack(
-    @GetCurrentUserId() userId: string,
-    @Body() body: { id: string }
-  ) {
-    return this.trackService.listeningTrack(userId, body.id)
+  listeningTrack(@Body() body: { id: string }) {
+    return this.trackService.listeningTrack(body.id)
+  }
+
+  @Get('/favorites')
+  getFavoriteTracks(@GetCurrentUserId() userId: string) {
+    return this.trackService.getFavoriteTracks(userId)
   }
 
   @Post('/favorite/add')

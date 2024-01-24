@@ -47,9 +47,6 @@ export class TrackService {
         tracks.map((track) => {
           const artist = track.artist
           delete track.artist
-          const trackIsFavorite = track.favoriteBy.some(
-            (fav) => fav.userId === userId
-          )
           const featuring = track.featuring.map((feat) => ({
             artistId: feat.artistId,
             name: feat.artist.name
@@ -57,7 +54,6 @@ export class TrackService {
           return {
             ...track,
             artist,
-            trackIsFavorite,
             featuring
           }
         })
@@ -78,7 +74,7 @@ export class TrackService {
     })
   }
 
-  async listeningTrack(userId: string, trackId: string) {
+  async listeningTrack(trackId: string) {
     const track = await this.prisma.track.findFirst({
       where: {
         id: trackId
@@ -146,5 +142,63 @@ export class TrackService {
     return this.prisma.favoriteTrack.deleteMany({
       where: { trackId }
     })
+  }
+
+  async getFavoriteTracks(userId: string) {
+    return await this.prisma.favoriteTrack
+      .findMany({
+        where: {
+          userId
+        },
+        include: {
+          track: {
+            include: {
+              favoriteBy: {
+                select: {
+                  userId: true
+                }
+              },
+              artist: {
+                select: {
+                  name: true,
+                  artistPhoto: true
+                }
+              },
+              album: {
+                select: {
+                  id: true,
+                  title: true
+                }
+              },
+              featuring: {
+                select: {
+                  artistId: true,
+                  artist: {
+                    select: {
+                      name: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      })
+      .then((tracks) =>
+        tracks.map((data) => {
+          const artist = data.track.artist
+          delete data.track.artist
+          const featuring = data.track.featuring.map((feat) => ({
+            artistId: feat.artistId,
+            name: feat.artist.name
+          }))
+          return {
+            ...data.track,
+            ...data.track,
+            artist,
+            featuring
+          }
+        })
+      )
   }
 }

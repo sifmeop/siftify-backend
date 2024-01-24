@@ -7,4 +7,7 @@ export interface Tokens {
 
 type ResultUser = Omit<User, 'refreshToken'>
 
-export type AuthResult = ResultUser & Tokens
+export interface AuthResult {
+  user: ResultUser & Tokens
+  favoriteTracksIds: string[]
+}

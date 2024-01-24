@@ -70,8 +70,11 @@ export class AuthService {
     delete newUser.refreshToken
 
     return {
-      ...newUser,
-      ...tokens
+      user: {
+        ...newUser,
+        ...tokens
+      },
+      favoriteTracksIds: []
     }
   }
 
@@ -103,8 +106,11 @@ export class AuthService {
     delete user.refreshToken
 
     return {
-      ...user,
-      ...tokens
+      user: {
+        ...user,
+        ...tokens
+      },
+      favoriteTracksIds: await this.getFavoriteTracksIds(user.id)
     }
   }
 
@@ -184,8 +190,11 @@ export class AuthService {
     delete user.refreshToken
 
     return {
-      ...user,
-      ...tokens
+      user: {
+        ...user,
+        ...tokens
+      },
+      favoriteTracksIds: await this.getFavoriteTracksIds(user.id)
     }
   }
 
@@ -215,5 +224,17 @@ export class AuthService {
       access_token: at,
       refresh_token: rt
     }
+  }
+
+  async getFavoriteTracksIds(userId: string): Promise<string[]> {
+    const favoriteTracks = await this.prisma.favoriteTrack.findMany({
+      where: {
+        userId
+      },
+      select: {
+        trackId: true
+      }
+    })
+    return favoriteTracks.map(({ trackId }) => trackId)
   }
 }

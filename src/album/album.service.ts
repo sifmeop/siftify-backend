@@ -48,8 +48,7 @@ export class AlbumService {
         featuring: track.featuring.map((feat) => ({
           artistId: feat.artistId,
           name: feat.artist.name
-        })),
-        isFavoriteTrack: track.favoriteBy.some((fav) => fav.userId === userId)
+        }))
       }))
     }
   }
