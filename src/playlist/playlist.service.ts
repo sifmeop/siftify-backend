@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
 
 @Injectable()
@@ -9,11 +9,6 @@ export class PlaylistService {
     return this.prisma.playlist.findMany({
       where: {
         userId
-      },
-      select: {
-        id: true,
-        title: true,
-        isFixed: true
       }
     })
   }
@@ -24,10 +19,22 @@ export class PlaylistService {
         id: playlistId,
         userId
       },
-      select: {
-        id: true,
-        title: true,
-        isFixed: true
+      include: {
+        tracks: {
+          include: {
+            featuring: {
+              select: {
+                artistId: true,
+                artist: {
+                  select: {
+                    name: true
+                  }
+                }
+              }
+            },
+            favoriteBy: true
+          }
+        }
       }
     })
   }
@@ -35,7 +42,8 @@ export class PlaylistService {
   async createPlaylist(userId: string) {
     const countPlaylists = await this.prisma.playlist.count({
       where: {
-        userId
+        userId,
+        isFavorite: false
       }
     })
 
@@ -43,16 +51,28 @@ export class PlaylistService {
       data: {
         userId,
         title: `Мой плейлист № ${countPlaylists + 1}`
-      },
-      select: {
-        id: true,
-        title: true,
-        isFixed: true
       }
     })
   }
 
   async deletePlaylist(userId: string, playlistId: string) {
+    const isFavoritePlaylist = await this.prisma.playlist.findFirst({
+      where: {
+        id: playlistId,
+        userId
+      },
+      select: {
+        isFavorite: true
+      }
+    })
+
+    if (isFavoritePlaylist.isFavorite) {
+      throw new HttpException(
+        'Can not delete favorite playlist',
+        HttpStatus.FORBIDDEN
+      )
+    }
+
     await this.prisma.playlist.delete({
       where: {
         id: playlistId,
@@ -75,7 +95,8 @@ export class PlaylistService {
         userId
       },
       data: {
-        isFixed: body.isFixed
+        isFixed: body.isFixed,
+        isFixedAt: body.isFixed ? new Date() : null
       }
     })
   }

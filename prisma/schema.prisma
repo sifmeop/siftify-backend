@@ -101,14 +101,16 @@ model FavoriteTrack {
 }
 
 model Playlist {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  title     String
-  cover     String?
-  isFixed   Boolean  @default(false)
-  tracks    Track[]
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String   @db.ObjectId
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  cover      String?
+  isFixed    Boolean   @default(false)
+  isFixedAt  DateTime?
+  tracks     Track[]
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     String    @db.ObjectId
+  isFavorite Boolean   @default(false)
 }
 
 model Album {

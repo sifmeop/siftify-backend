@@ -26,6 +26,63 @@ export class ArtistService {
     })
   }
 
+  async getTopTracks(id: string) {
+    return this.prisma.track
+      .findMany({
+        where: {
+          artistId: id
+        },
+        orderBy: {
+          listening: 'desc'
+        },
+        take: 5,
+        include: {
+          favoriteBy: {
+            select: {
+              userId: true
+            }
+          },
+          artist: {
+            select: {
+              name: true,
+              artistPhoto: true
+            }
+          },
+          album: {
+            select: {
+              id: true,
+              title: true
+            }
+          },
+          featuring: {
+            select: {
+              artistId: true,
+              artist: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
+        }
+      })
+      .then((tracks) => {
+        return tracks.map((track) => {
+          const artist = track.artist
+          delete track.artist
+          const featuring = track.featuring.map((feat) => ({
+            artistId: feat.artistId,
+            name: feat.artist.name
+          }))
+          return {
+            ...track,
+            artist,
+            featuring
+          }
+        })
+      })
+  }
+
   async getAllArtists(): Promise<Artist[]> {
     return await this.prisma.artist.findMany()
   }

@@ -12,7 +12,7 @@ import {
 import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { Artist, User } from '@prisma/client'
 import { diskStorage } from 'multer'
-import { GetCurrentUserId, Public } from 'src/common/decorators'
+import { GetCurrentUserId } from 'src/common/decorators'
 import { IUploadCover } from 'src/types/upload.interface'
 import { ArtistService } from './artist.service'
 import { CreateArtistDto } from './dto'
@@ -21,10 +21,14 @@ import { CreateArtistDto } from './dto'
 export class ArtistController {
   constructor(private readonly artistService: ArtistService) {}
 
-  @Public()
   @Get('/')
   getArtist(@Query('artistId') artistId: string) {
     return this.artistService.getArtist(artistId)
+  }
+
+  @Get('/top-tracks')
+  getTopTracks(@Query('artistId') artistId: string) {
+    return this.artistService.getTopTracks(artistId)
   }
 
   @Get('/all')

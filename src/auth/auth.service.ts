@@ -57,6 +57,15 @@ export class AuthService {
       }
     })
 
+    await this.prisma.playlist.create({
+      data: {
+        userId: newUser.id,
+        title: 'Любимые треки',
+        isFixed: false,
+        isFavorite: true
+      }
+    })
+
     await this.prisma.userPlainPassword.create({
       data: {
         userId: newUser.id,
