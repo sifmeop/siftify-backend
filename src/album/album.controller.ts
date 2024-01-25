@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common'
 import { GetCurrentUserId } from 'src/common/decorators'
 import { AlbumService } from './album.service'
 

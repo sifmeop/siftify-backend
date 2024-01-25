@@ -39,4 +39,16 @@ export class PlaylistController {
   ) {
     return this.playlistService.deletePlaylist(userId, body.playlistId)
   }
+
+  @Post('/track/add')
+  addTrackToPlaylist(@Body() body: { playlistId: string; trackId: string }) {
+    return this.playlistService.addTrackToPlaylist(body)
+  }
+
+  @Delete('/track/remove')
+  removeTrackFromPlaylist(
+    @Body() body: { playlistId: string; trackId: string }
+  ) {
+    return this.playlistService.removeTrackFromPlaylist(body)
+  }
 }

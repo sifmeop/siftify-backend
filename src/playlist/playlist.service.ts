@@ -14,29 +14,70 @@ export class PlaylistService {
   }
 
   async getPlaylistById(userId: string, playlistId: string) {
-    return this.prisma.playlist.findFirst({
-      where: {
-        id: playlistId,
-        userId
-      },
-      include: {
-        tracks: {
-          include: {
-            featuring: {
-              select: {
-                artistId: true,
-                artist: {
-                  select: {
-                    name: true
+    return this.prisma.playlist
+      .findFirst({
+        where: {
+          id: playlistId,
+          userId
+        },
+        include: {
+          tracks: {
+            include: {
+              favoriteBy: {
+                select: {
+                  userId: true
+                }
+              },
+              artist: {
+                select: {
+                  name: true,
+                  artistPhoto: true
+                }
+              },
+              album: {
+                select: {
+                  id: true,
+                  title: true
+                }
+              },
+              featuring: {
+                select: {
+                  artistId: true,
+                  artist: {
+                    select: {
+                      name: true
+                    }
                   }
                 }
               }
-            },
-            favoriteBy: true
+            }
+          },
+          user: {
+            select: {
+              username: true
+            }
           }
         }
-      }
-    })
+      })
+      .then((playlist) => {
+        const tracks = playlist.tracks.map((data) => {
+          const artist = data.artist
+          delete data.artist
+          const featuring = data.featuring.map((feat) => ({
+            artistId: feat.artistId,
+            name: feat.artist.name
+          }))
+          return {
+            ...data,
+            artist,
+            featuring
+          }
+        })
+        return {
+          ...playlist,
+          tracks
+        }
+      })
   }
 
   async createPlaylist(userId: string) {
@@ -97,6 +138,35 @@ export class PlaylistService {
       data: {
         isFixed: body.isFixed,
         isFixedAt: body.isFixed ? new Date() : null
+      }
+    })
+  }
+
+  async addTrackToPlaylist(body: { playlistId: string; trackId: string }) {
+    return await this.prisma.track.update({
+      where: {
+        id: body.trackId
+      },
+      data: {
+        playlist: {
+          connect: {
+            id: body.playlistId
+          }
+        }
+      }
+    })
+  }
+
+  async removeTrackFromPlaylist(body: { playlistId: string; trackId: string }) {
+    return await this.prisma.track.update({
+      where: {
+        id: body.trackId,
+        playlistId: body.playlistId
+      },
+      data: {
+        playlist: {
+          disconnect: true
+        }
       }
     })
   }

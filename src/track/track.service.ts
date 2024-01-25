@@ -194,7 +194,6 @@ export class TrackService {
           }))
           return {
             ...data.track,
-            ...data.track,
             artist,
             featuring
           }
