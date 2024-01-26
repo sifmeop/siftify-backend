@@ -1,5 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  UploadedFiles,
+  UseInterceptors
+} from '@nestjs/common'
+import { FileFieldsInterceptor } from '@nestjs/platform-express'
+import { diskStorage } from 'multer'
 import { GetCurrentUserId } from 'src/common/decorators'
+import { IEditPlaylist, IEditPlaylistFile } from 'src/types/playlist.interface'
 import { PlaylistService } from './playlist.service'
 
 @Controller('playlist')
@@ -50,5 +63,31 @@ export class PlaylistController {
     @Body() body: { playlistId: string; trackId: string }
   ) {
     return this.playlistService.removeTrackFromPlaylist(body)
+  }
+
+  @Put('/edit')
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'cover', maxCount: 1 }], {
+      storage: diskStorage({
+        destination: (req, file, callback) => {
+          if (file) {
+            callback(null, `./public/temporarily-uploads`)
+          }
+        },
+        filename: (req, file, callback) => {
+          if (file) {
+            const filename = file.originalname
+            callback(null, filename)
+          }
+        }
+      })
+    })
+  )
+  editPlaylist(
+    @UploadedFiles() file: IEditPlaylistFile,
+    @GetCurrentUserId() userId: string,
+    @Body() body: IEditPlaylist
+  ) {
+    return this.playlistService.editPlaylist(userId, body, file)
   }
 }
